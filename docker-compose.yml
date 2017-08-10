@@ -1,0 +1,31 @@
+version: '2.2'
+
+services:
+  data:
+    image: alpine:3.4
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/var/
+      - ~/.composer:/var/www/html/vendor
+
+  composer:
+    image: composer:1.4
+    command: 'install --prefer-dist'
+    working_dir: /var/www/html
+    volumes_from:
+      - data
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f vendor/autoload.php']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  php:
+    image: php:7.1
+    working_dir: /var/www/html
+    volumes_from:
+      - data
+    depends_on:
+      composer: { condition: service_healthy }
+    environment:
+      - PATH=/var/www/html/vendor/bin:$PATH
