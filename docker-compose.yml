@@ -20,6 +20,20 @@ services:
       timeout: 5s
       retries: 30
 
+  database:
+    image: mysql:5.5
+    volumes_from:
+      - data
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DATABASE=symfon
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping']
+      interval: 30s
+      timeout: 5s
+      retries: 30
+
   php:
     image: php:7.1
     working_dir: /var/www/html
@@ -27,5 +41,9 @@ services:
       - data
     depends_on:
       composer: { condition: service_healthy }
+      database: { condition: service_healthy }
     environment:
       - PATH=/var/www/html/vendor/bin:$PATH
+      - DATABASE_URL=mysql://root:root@database:3306/symfony
+      - SYMFONY_DEBUG=0
+      - SYMFONY_ENV=test
