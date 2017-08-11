@@ -6,11 +6,10 @@ services:
     volumes:
       - .:/var/www/html
       - /var/www/html/var/
-      - ~/.composer:/var/www/html/vendor
 
   composer:
     image: composer:1.4
-    command: 'install --prefer-dist'
+    command: 'install --prefer-dist --no-suggest --optimize-autoloader --no-interaction --ignore-platform-reqs'
     working_dir: /var/www/html
     volumes_from:
       - data
@@ -25,25 +24,32 @@ services:
     volumes_from:
       - data
     environment:
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - MYSQL_DATABASE=symfon
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=user
+      - MYSQL_DATABASE=symfony
+      - MYSQL_ROOT_PASSWORD=root
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping']
+      test: "/usr/local/mysql/bin/mysqladmin --user=user --password=user ping"
       interval: 30s
-      timeout: 5s
-      retries: 30
+      timeout: 10s
+      retries:  2
+    ports:
+      - 3306
+    expose:
+      - 3306
 
   php:
-    image: php:7.1
+    image: sf/php:7.1
     working_dir: /var/www/html
     volumes_from:
       - data
+    links:
+      - database
     depends_on:
       composer: { condition: service_healthy }
       database: { condition: service_healthy }
     environment:
       - PATH=/var/www/html/vendor/bin:$PATH
-      - DATABASE_URL=mysql://root:root@database:3306/symfony
+      - DATABASE_URL=mysql://user:user@database:3306/symfony
       - SYMFONY_DEBUG=0
       - SYMFONY_ENV=test
